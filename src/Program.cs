@@ -119,3 +119,55 @@ namespace Stressi
         }
 
         #endregion
+       
+ #region Main application functions
+
+        private static void RunStressi()
+        {
+            var maxUsers = LoadedConfig.ConcurrentUsers ??
+                           DefaultConfig.ConcurrentUsers;
+
+            var maxRepetitions = LoadedConfig.Repetitions ??
+                                 DefaultConfig.Repetitions;
+
+            var total = maxUsers * maxRepetitions;
+
+            Console.WriteLine($" # Spinning up {maxUsers} users with {maxRepetitions} requests per user " +
+                              $"for a total of {total} request against {LoadedConfig.Url}");
+
+            Console.WriteLine();
+
+            RunStats.Started = DateTimeOffset.Now;
+
+            Parallel.For(0, maxUsers, _ => CreateUser());
+
+            RunStats.Ended = DateTimeOffset.Now;
+            RunStats.Duration = RunStats.Ended - RunStats.Started;
+
+            if (LoadedConfig.Verbose)
+            {
+                Console.WriteLine();
+            }
+
+            Console.WriteLine("Timing:");
+            Console.WriteLine($" # Started:                     {RunStats.Started}");
+            Console.WriteLine($" # Ended:                       {RunStats.Ended}");
+            Console.WriteLine($" # Duration:                    {RunStats.Duration}");
+            Console.WriteLine();
+            Console.WriteLine("Responses:");
+            Console.WriteLine($" # Total Requests:              {RunStats.TotalRequests}");
+            Console.WriteLine($" # Successful Requests (2xx):   {RunStats.SuccessfulRequests}");
+            Console.WriteLine($" # Further Action Needed (3xx): {RunStats.FurtherActionResponses}");
+            Console.WriteLine($" # User Errors (4xx):           {RunStats.UserErrors}");
+            Console.WriteLine($" # Server Errors (5xx):         {RunStats.ServerErrors}");
+            Console.WriteLine($" # Unhandled Exceptions:        {RunStats.Exceptions}");
+            Console.WriteLine();
+            Console.WriteLine("Response Times:");
+            Console.WriteLine($" # Average:                     {RunStats.ResponseTimes.Sum() / RunStats.ResponseTimes.Count} ms");
+            Console.WriteLine($" # Min:                         {RunStats.ResponseTimes.Min()} ms");
+            Console.WriteLine($" # Max:                         {RunStats.ResponseTimes.Max()} ms");
+            Console.WriteLine();
+            Console.WriteLine("Request/Response Sizes:");
+            Console.WriteLine($" # Total Bytes Sent:            {RunStats.BytesSent} ({FormatBytes(RunStats.BytesSent)})");
+            Console.WriteLine($" # Total Bytes Received:        {RunStats.BytesReceived} ({FormatBytes(RunStats.BytesReceived)})");
+        }
