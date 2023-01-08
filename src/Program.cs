@@ -288,4 +288,72 @@ namespace Stressi
                 }
             }
         }
+        private static void AnalyzeStatusCode(HttpStatusCode statusCode)
+        {
+            var sc = (int) statusCode;
 
+            if (sc >= 200 &&
+                sc < 300)
+            {
+                lock (RunStats)
+                {
+                    RunStats.SuccessfulRequests++;
+                }
+            }
+            else if (sc >= 300 &&
+                     sc < 400)
+            {
+                lock (RunStats)
+                {
+                    RunStats.FurtherActionResponses++;
+                }
+            }
+            else if (sc >= 400 &&
+                     sc < 500)
+            {
+                lock (RunStats)
+                {
+                    RunStats.UserErrors++;
+                }
+            }
+            else if (sc >= 500 &&
+                     sc < 600)
+            {
+                lock (RunStats)
+                {
+                    RunStats.ServerErrors++;
+                }
+            }
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            var exts = new[]
+            {
+                "",
+                "KB",
+                "MB",
+                "GB",
+                "TB"
+            };
+
+            for (var i = 5; i > 0; i--)
+            {
+                var divisor = Math.Pow(1024, i);
+
+                if (divisor > bytes)
+                {
+                    continue;
+                }
+
+                var nv = bytes / divisor;
+
+                return $"{nv:0.00} {exts[i]}";
+            }
+
+            return $"{bytes}";
+        }
+
+        #endregion
+    }
+}
