@@ -171,3 +171,121 @@ namespace Stressi
             Console.WriteLine($" # Total Bytes Sent:            {RunStats.BytesSent} ({FormatBytes(RunStats.BytesSent)})");
             Console.WriteLine($" # Total Bytes Received:        {RunStats.BytesReceived} ({FormatBytes(RunStats.BytesReceived)})");
         }
+        
+        private static void CreateUser()
+        {
+            var maxRepetitions = LoadedConfig.Repetitions ??
+                                 DefaultConfig.Repetitions;
+
+            Parallel.For(0, maxRepetitions, _ => MakeRequest());
+        }
+
+        private static void MakeRequest()
+        {
+            lock (RunStats)
+            {
+                RunStats.TotalRequests++;
+            }
+
+            try
+            {
+                var sw = new Stopwatch();
+                var size = 50L;
+
+                sw.Start();
+
+                if (!(WebRequest.Create(LoadedConfig.Url) is HttpWebRequest req))
+                {
+                    throw new Exception($"Unable to create HttpWebRequest for {LoadedConfig.Url}");
+                }
+
+                req.AllowAutoRedirect = false;
+                req.KeepAlive = false;
+
+                req.Method = LoadedConfig.HttpMethod ?? DefaultConfig.HttpMethod;
+
+                if (LoadedConfig.Timeout.HasValue)
+                {
+                    req.Timeout = LoadedConfig.Timeout.Value;
+                    size += 12;
+                }
+
+                if (LoadedConfig.UserAgent != null)
+                {
+                    req.UserAgent = LoadedConfig.UserAgent;
+                    size += 12 + LoadedConfig.UserAgent.Length;
+                }
+
+                if (LoadedConfig.Headers != null)
+                {
+                    foreach (var (key, value) in LoadedConfig.Headers)
+                    {
+                        req.Headers.Add(key, value);
+                        size += key.Length + value.Length + 5;
+                    }
+                }
+
+                if (!(req.GetResponse() is HttpWebResponse res))
+                {
+                    throw new Exception($"Unable to get HttpWebResponse from HttpWebRequest for {LoadedConfig.Url}");
+                }
+
+                sw.Stop();
+
+                lock (RunStats)
+                {
+                    RunStats.BytesSent += size;
+                    RunStats.ResponseTimes.Add(sw.ElapsedMilliseconds);
+                    RunStats.BytesReceived += res.ContentLength;
+                }
+
+                AnalyzeStatusCode(res.StatusCode);
+
+                if (LoadedConfig.Verbose)
+                {
+                    Console.WriteLine($" > {((int) res.StatusCode)} {res.StatusDescription}");
+                }
+            }
+            catch (WebException ex)
+            {
+                try
+                {
+                    if (!(ex.Response is HttpWebResponse res))
+                    {
+                        throw new Exception($"Unable to get HttpWebResponse from WebException for {LoadedConfig.Url}");
+                    }
+
+                    AnalyzeStatusCode(res.StatusCode);
+
+                    if (LoadedConfig.Verbose)
+                    {
+                        Console.WriteLine($" > {((int) res.StatusCode)} {res.StatusDescription}");
+                    }
+                }
+                catch
+                {
+                    lock (RunStats)
+                    {
+                        RunStats.Exceptions++;
+                    }
+
+                    if (LoadedConfig.Verbose)
+                    {
+                        Console.WriteLine($" > [ERROR] {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                lock (RunStats)
+                {
+                    RunStats.Exceptions++;
+                }
+
+                if (LoadedConfig.Verbose)
+                {
+                    Console.WriteLine($" > [ERROR] {ex.Message}");
+                }
+            }
+        }
+
