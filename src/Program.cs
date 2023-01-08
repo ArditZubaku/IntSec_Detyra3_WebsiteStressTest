@@ -79,3 +79,43 @@ namespace Stressi
 
             RunStressi();
         }
+
+        #region Helper functions
+
+        private static void ShowHelp()
+        {
+            Console.WriteLine("Usage: stressi [options]");
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            Console.WriteLine("  -v | --version               Show the app version.");
+            Console.WriteLine("  -h | --help                  Show the app usage and help information.");
+            Console.WriteLine("  -u | --url <url>             The URL to use for each request. Required!");
+            Console.WriteLine("  -m | --method <method>       The HTTP method to use for each request. Defaults to 'GET'.");
+            Console.WriteLine("  -s | --users <number>        Number of concurrent users to simulate. Defaults to 10.");
+            Console.WriteLine("  -r | --reps <number>         Number of repetitions pr. user. Defaults to 10.");
+            Console.WriteLine("  -b | --verbose               Turn on verbose mode, which shows a lot more console output.");
+            Console.WriteLine("  -a | --user-agent <string>   Set the user-agent to use.");
+            Console.WriteLine("  -e | --headers <string>      Comma-list of key:value, like so: key1:value1,key2:value2");
+            Console.WriteLine("  -t | --timeout <number>      Set the timeout for each request to N ms.");
+
+            Console.WriteLine();
+            ConsoleEx.WriteLineWordWrapped("If a value for one of the options has spaces in it, you can use quotation marks around the string, " +
+                                           "like so: \"this will all be the same value\"");
+
+            Console.WriteLine();
+            ConsoleEx.WriteLineWordWrapped("Number of users and repetitions pr. user determines the total number of requests that will be performed. " +
+                                           "They both default to 10, which means 100 total requests.");
+
+            Console.WriteLine();
+            ConsoleEx.WriteLineWordWrapped($"For both options -u and -r you can supply -1 as a value to indicate it to use the max value of a " +
+                                           $"int64, which is {long.MaxValue}, which will basically run forever..");
+
+            Console.WriteLine();
+        }
+
+        private static void ShowVersion()
+        {
+            Console.WriteLine($"Version {Assembly.GetExecutingAssembly().GetName().Version}");
+        }
+
+        #endregion
